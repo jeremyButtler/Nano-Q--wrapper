@@ -18,6 +18,9 @@
 #    Diretory: Results, outpur from Nano-Q
 # Requires
 #    Nano-Q, see help message for possible install locations
+#    samtools
+#    minimap2
+#    awk
 ################################################################################
 
 #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
