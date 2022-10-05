@@ -1,6 +1,6 @@
 # Nano-Q--wrapper
 
-Use: Wrapper to run Nano-Q (https://github.com/PresetonLeung/Nano-Q)
+Wrapper to run Nano-Q (https://github.com/PresetonLeung/Nano-Q)
 
 Input:
 
@@ -11,7 +11,7 @@ Input:
     -p:
          - prefix to name everything
     -h:
-         - Print help message with all possible commands
+         - Print help message with all possible commands (there are more options)
 Output:
 
     - file: prefix.bam used with Nano-Q
