@@ -81,7 +81,6 @@ scriptDirStr="$(dirname "$0")"; # location of this script
 #*******************************************************************************
 
 helpStr="$(basename "$0") -fastq reads.fastq -ref refs.fasta
-
   Input:
     -fastq: Fastq file of reads to find variants in         [Required]
     -ref: Fasta file with references to align reads against [Required]
@@ -105,7 +104,6 @@ helpStr="$(basename "$0") -fastq reads.fastq -ref refs.fasta
           1000 subprocess for PCR data. However, this will
           not always launch three subprocess.
     -h, --h, -help, or --help: print this help message
-
     Variables for Nano-Q that take input
     -c: Starting codon position in the reference genome     [1]
     -l: Length cut off for read size                   [shortest reference - 50]
@@ -116,13 +114,11 @@ helpStr="$(basename "$0") -fastq reads.fastq -ref refs.fasta
     -q: Quality threshold cut off for each base             [5]
     -ht: Maximum hamming distant to group reads in cluster  [234]
     -mc: Minimum number of reads to keep a cluster          [30]
-
     Variables telling Nano-Q to turn on a feature (Do not provide arguments) 
     -d: Draw dendrogram to keep help determine HD-Threshod  [OFF]
         (-ht) cutoff
     -hd: Keep the hamming distance files (can be large)     [OFF]
     -kc: Keep the clustered reads (can be large)            [OFF]
-
   Output:
     Nano-Q makes a file called Results with output
 "
@@ -280,31 +276,23 @@ if [[ "$readLenCutOffInt" -lt 1 ]]; then
           -v offSetInt="$cutOffOffsetInt" \
           '
           BEGIN{shortestLenInt = 1000000000;}
-
           { # MAIN BLOCK
               if($1 ~ /^>/)
               { # if on a header line
                   if(seqStr == "")
                       next;
-
                   tmpLenInt = length(seqStr);  # find previous sequences length
-
                   if(tmpLenInt < shortestLenInt)
                       shortestLenInt = tmpLenInt;   # find shortest length
-
                   seqStr = "";                      # reset for next sequence
                   next;                             # move to the sequence
               } # if on a header line
-
               seqStr = seqStr $0;
           } # MAIN BLOCK
-
           END{
               tmpLenInt = length(seqStr);  # find previous sequences length
-
               if(tmpLenInt < shortestLenInt)
                   shortestLenInt = tmpLenInt;   # find shortest length
-
               print shortestLenInt - offSetInt;  # print out cut off value
               # Subtracting 50 so Nano-Q will be force to trim every sequence
               # Otherwise does not print out sequences
@@ -325,11 +313,18 @@ jumpIntervalInt="$( \
       -@ 3 \
       -c \
       -F 4 \
-      "$prefixStr--tmp.bam" |
+      "$prefixStr.bam" |
       awk \
         -v numThreadsInt="$numThreadsInt" \
         '{printf "%i\n", $1 / numThreadsInt}' \
 )"; # Figure out how many threads to use from the number of mapped reads
+
+if [[ "$jumpIntervalInt" == "" ]]; then
+    printf \
+        "No reads in %s were mapped, please provide a set of new reference\n" \
+        "$readsFastqStr";
+    exit;
+fi # if no reads were mapped
 
 # -@: is number of threads for samtools view
 # -c: count number of reads
