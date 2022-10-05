@@ -26,3 +26,7 @@ Required programs:
         - Put this script in the Nano-Q directory
     - samtools
     - minimap2
+
+Note:
+
+    - This asssumes nothing is installed on a virtual enviroment.
