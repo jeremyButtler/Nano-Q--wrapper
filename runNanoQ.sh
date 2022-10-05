@@ -18,7 +18,8 @@
 #         fasta file with references to align reads to
 #    -p:
 #         prefix to name everything
-#    See help message (Sec-1 Sub-3)
+#    -h:
+#         Print help message with all possible commands
 # Output:
 #    file: prefix.bam used with Nano-Q
 #    Diretory: prefix, holding output from Nano-Q
