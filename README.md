@@ -23,6 +23,6 @@ Required programs:
 
     - Nano-Q, Some possible locations to install
         - In home directory (~)
-        - Or puth this script in Nano-Q directory
+        - Put this script in the Nano-Q directory
     - samtools
     - minimap2
