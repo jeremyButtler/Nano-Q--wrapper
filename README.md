@@ -10,6 +10,10 @@ Input:
          - fasta file with references to align reads to
     -p:
          - prefix to name everything
+    -l:
+         - Trim length for Nano-Q.
+         - Nano-Q discards and reads shorter then -l, so make sure is a good value.
+         - If not provided is shortest reference - 50
     -h:
          - Print help message with all possible commands (there are more options)
 Output:
