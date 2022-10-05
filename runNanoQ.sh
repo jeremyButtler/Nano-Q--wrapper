@@ -10,7 +10,7 @@
 ################################################################################
 # Name: runNanoQ.sh
 # Use:
-#    Is a wrapper to run Nano-Q (https://github.com/PresetonLeung/Nano-Q
+#    Is a wrapper to run Nano-Q (https://github.com/PresetonLeung/Nano-Q)
 # Input:
 #    See help message (Sec-1 Sub-3)
 # Output:
