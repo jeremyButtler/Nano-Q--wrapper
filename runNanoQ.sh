@@ -104,6 +104,7 @@ helpStr="$(basename "$0") -fastq reads.fastq -ref refs.fasta
           1000 subprocess for PCR data. However, this will
           not always launch three subprocess.
     -h, --h, -help, or --help: print this help message
+
     Variables for Nano-Q that take input
     -c: Starting codon position in the reference genome     [1]
     -l: Length cut off for read size                   [shortest reference - 50]
@@ -114,6 +115,7 @@ helpStr="$(basename "$0") -fastq reads.fastq -ref refs.fasta
     -q: Quality threshold cut off for each base             [5]
     -ht: Maximum hamming distant to group reads in cluster  [234]
     -mc: Minimum number of reads to keep a cluster          [30]
+
     Variables telling Nano-Q to turn on a feature (Do not provide arguments) 
     -d: Draw dendrogram to keep help determine HD-Threshod  [OFF]
         (-ht) cutoff
@@ -137,10 +139,14 @@ while [ $# -gt 0 ]; do
 # while their is user input to check
     if [[ "$2" == "" ]]; then
     # if parameter has no argument
+        if [[ "$singleArgsStr" != "" ]]; then
+            singleArgsStr="$singleArgsStr ";
+        fi # if need to add space between single arguments
+
         case $1 in             # checking single argument input for Nano-Q
-            -d) singleArgsStr="$singleArgsStr -d";;
-            -hd) singleArgsStr="$singleArgsStr -hd";;
-            -kc) singleArgsStr="$singleArgsStr -kc";;
+            -d) singleArgsStr="$singleArgsStr-d";;
+            -hd) singleArgsStr="$singleArgsStr-hd";;
+            -kc) singleArgsStr="$singleArgsStr-kc";;
             ?) printf \
                    "%s\n%s has no arguments\n" \
                    "$helpStr" \
@@ -372,9 +378,16 @@ else
 # else running Nano-Q with at least one single argument command
 fi # check if runing Nano-Q without any of the single argument parameters
 
+exit;
+
 # Change the results file name to the prefix name
 mv \
-    Results \
+    "Results" \
     "$prefixStr";
+
+# removing bam files, since no longer need??
+rm \
+    "$prefixStr.bam" \
+    "$prefixStr.bam.bai";
 
 exit;
