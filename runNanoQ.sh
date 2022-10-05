@@ -321,7 +321,7 @@ jumpIntervalInt="$( \
 
 if [[ "$jumpIntervalInt" == "" ]]; then
     printf \
-        "No reads in %s were mapped, please provide a set of new reference\n" \
+        "No reads in %s were mapped, please provide a new set of references\n" \
         "$readsFastqStr";
     exit;
 fi # if no reads were mapped
