@@ -253,6 +253,66 @@ if [[ ! -f "$prefixStr.bam" ]]; then
         -t "$numThreadsInt" \
         "$refFastaStr" \
         "$readsFastqStr" |
+      awk \
+        -v numThreadsInt="$numThreadsInt" \
+        -v prefStr="$prefixStr" \
+        ' # Get the maximum number of reads mapped to a single reference
+          # Uses the Mapq value to figure this out.
+        BEGIN{
+           intRef = 0;
+           if(prefStr == "")
+               prefStr = "out";
+           if(numThreadsInt == "")
+               numThreadsInt = 1;
+           outFileStr = prefStr "--count.txt";
+        }; # BEGIN block
+
+        { # MAIN block
+            print $0; # print out samfile for samtools
+
+            if($1 ~ /^@/)
+                next;                           # Is a header, move on
+        
+            if($5 != "*" && $5 > 0)
+            { # if this is the best matching reference for the read
+                if(intRef == 0)
+                { # If this is the frist kept alignment
+                    intRef = 1;   # Number of references with mapped reads
+                    refAryStr[intRef] = $3;     # Name of reference one
+                    refCntAryInt[intRef] = 1;  # Number of reads mapped to ref 1
+                    next;                       # move onto the next alignment
+                }; # If this is the first kept alignment 
+        
+                for(intCnt = 1; intCnt <= intRef; intCnt++)
+                { # for all mapped refs, check if matches current reference
+                    if(refAryStr[intCnt] == $3)
+                    { # If was a match, incurment count
+                        refCntAryInt[intCnt]++; # Incurment matching ref count
+                        break;                  # found match, stop
+                    }; # If was a match, incument count
+        
+                    if(intCnt == intRef)
+                    { # If there was not matching reference (is new)
+                        intRef++;                   # adding in new reference
+                        refAryStr[intRef] = $3;     # get new reference name
+                        refCntAryInt[intRef] = 1; # set counter for new ref to 1
+                        break;
+                    }; # If there was no matching reference (is new)
+                }; # for all mapped refs, check if matches current reference
+            } # if this is the best matching reference for the read
+        }; # MAIN block
+
+        END{ # END block
+            for(intCnt = 1; intCnt <= intRef; intCnt++)
+            { # for all references with reads, check which has most reads
+                if(refCntAryInt[intCnt] > mostMappedReadsInt)
+                    mostMappedReadsInt = refCntAryInt[intCnt];
+            }; # for all references with reads, check which has most reads
+        
+            printf "%i", mostMappedReadsInt / numThreadsInt > outFileStr;
+            # print out the max read count/ref
+        }; # END block
+        ' |
       samtools sort \
         -@ "$numThreadsInt" \
         -T tmp.txt |
@@ -263,6 +323,13 @@ if [[ ! -f "$prefixStr.bam" ]]; then
         -q "$minMapqDbl" \
         --min-qlen "$minLenInt" \
       > "$prefixStr.bam";
+
+      # the awk script is massive and adds in a bit more processing time,
+      # but gets the maximum number of reads mapped to a single reference.
+      # This will allow setting of a better jump setting when multiple
+      # references are used.
+      # I put hte awk script here instead of in a file to avoid having to
+      # have to move two files around.
 fi # If need to make a bam file
 
 if [[ ! -f "$prefixStr.bam.bai" ]]; then
@@ -282,29 +349,34 @@ if [[ "$readLenCutOffInt" -lt 1 ]]; then
           -v offSetInt="$cutOffOffsetInt" \
           '
           BEGIN{shortestLenInt = 1000000000;}
+
           { # MAIN BLOCK
               if($1 ~ /^>/)
               { # if on a header line
                   if(seqStr == "")
                       next;
                   tmpLenInt = length(seqStr);  # find previous sequences length
-                  if(tmpLenInt < shortestLenInt)
+                                                                                                                                                                          if(tmpLenInt < shortestLenInt)
                       shortestLenInt = tmpLenInt;   # find shortest length
-                  seqStr = "";                      # reset for next sequence
-                  next;                             # move to the sequence
+                      seqStr = "";                  # reset for next sequence
+                      next;                         # move to the sequence
               } # if on a header line
+
               seqStr = seqStr $0;
           } # MAIN BLOCK
+
           END{
               tmpLenInt = length(seqStr);  # find previous sequences length
+
               if(tmpLenInt < shortestLenInt)
                   shortestLenInt = tmpLenInt;   # find shortest length
+
               print shortestLenInt - offSetInt;  # print out cut off value
               # Subtracting 50 so Nano-Q will be force to trim every sequence
               # Otherwise does not print out sequences
-         } # END BLOCK
-       ' \
-       < "$refFastaStr" \
+          } # END BLOCK
+          ' \
+        < "$refFastaStr" \
     )";
 fi # if user did not provide a read cut off value
 
@@ -314,16 +386,7 @@ fi # if user did not provide a read cut off value
 
 # Get the size of jump interval for a given thread
 #  (otherwise Nano-Q launches to many subrocess)
-jumpIntervalInt="$( \
-    samtools view \
-      -@ 3 \
-      -c \
-      -F 4 \
-      "$prefixStr.bam" |
-      awk \
-        -v numThreadsInt="$numThreadsInt" \
-        '{printf "%i\n", $1 / numThreadsInt}' \
-)"; # Figure out how many threads to use from the number of mapped reads
+jumpIntervalInt="$(cat "$prefixStr--count.txt")";
 
 if [[ "$jumpIntervalInt" == "" ]]; then
     printf \
@@ -386,6 +449,7 @@ mv \
 # removing bam files, since no longer need??
 rm \
     "$prefixStr.bam" \
-    "$prefixStr.bam.bai";
+    "$prefixStr.bam.bai" \
+    "$prefixStr--count.txt";
 
 exit;
