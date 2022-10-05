@@ -18,7 +18,6 @@ Input:
          - Print help message with all possible commands (there are more options)
 Output:
 
-    - file: prefix.bam used with Nano-Q
     - Diretory: prefix, holding output from Nano-Q
     
 Run: bash runNanoQ.sh -fastq reads.fastq -ref refs.fasta
