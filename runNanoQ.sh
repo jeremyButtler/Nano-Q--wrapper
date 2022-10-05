@@ -378,8 +378,6 @@ else
 # else running Nano-Q with at least one single argument command
 fi # check if runing Nano-Q without any of the single argument parameters
 
-exit;
-
 # Change the results file name to the prefix name
 mv \
     "Results" \
