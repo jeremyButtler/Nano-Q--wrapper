@@ -12,10 +12,18 @@
 # Use:
 #    Is a wrapper to run Nano-Q (https://github.com/PresetonLeung/Nano-Q)
 # Input:
+#    -fastq:
+#        fastq file with reads to detect varaints in
+#    -ref:
+#         fasta file with references to align reads to
+#    -p:
+#         prefix to name everything
 #    See help message (Sec-1 Sub-3)
 # Output:
 #    file: prefix.bam used with Nano-Q
-#    Diretory: Results, outpur from Nano-Q
+#    Diretory: prefix, holding output from Nano-Q
+# Run:
+#    bash runNanoQ.sh -fastq reads.fastq -ref refs.fasta
 # Requires
 #    Nano-Q, see help message for possible install locations
 #    samtools
@@ -367,5 +375,10 @@ else
         "$singleArgsStr";
 # else running Nano-Q with at least one single argument command
 fi # check if runing Nano-Q without any of the single argument parameters
+
+# Change the results file name to the prefix name
+mv \
+    Results \
+    "$prefixStr";
 
 exit;
