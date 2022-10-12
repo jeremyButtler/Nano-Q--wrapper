@@ -1,6 +1,6 @@
 # Nano-Q--wrapper
 
-Wrapper to run Nano-Q (https://github.com/PresetonLeung/Nano-Q)
+Wrapper that may help with running Nano-Q (https://github.com/PresetonLeung/Nano-Q)
 
 Input:
 
