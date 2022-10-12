@@ -4,22 +4,22 @@ Wrapper to run Nano-Q (https://github.com/PresetonLeung/Nano-Q)
 
 Input:
 
-  -fastq:
+  - -fastq:
     - fastq file with reads to detect varaints in
-  -ref:
+  - -ref:
      - fasta file with references to align reads to
-  -p:
+  - -p:
      - prefix to name everything
-  -l:
+  - -l:
      - Trim length for Nano-Q.
      - Nano-Q discards and reads shorter then -l, so make sure is a good value.
      - If not provided is shortest reference - 50
-  -racon:
+  - -racon:
      - Bulid a consensus using racon
      - This is here because I found that Nano-Q sometimes outputs a consensus
        with just N's. This is likely just be for reads simulated with
        badread. Real data may be better.
-  -h:
+  - -h:
      - Print help message with all possible commands (there are more options)
      
 Output:
