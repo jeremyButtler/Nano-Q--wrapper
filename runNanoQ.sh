@@ -13,13 +13,15 @@
 #    Is a wrapper to run Nano-Q (https://github.com/PresetonLeung/Nano-Q)
 # Input:
 #    -fastq:
-#        fastq file with reads to detect varaints in
+#        - fastq file with reads to detect varaints in
 #    -ref:
-#         fasta file with references to align reads to
+#         - fasta file with references to align reads to
 #    -p:
-#         prefix to name everything
+#         - prefix to name everything
+#    -racon:
+#        - Use racon to build a consensus instead of Nano-Q
 #    -h:
-#         Print help message with all possible commands
+#        - Print help message (has all possible commands)
 # Output:
 #    file: prefix.bam used with Nano-Q
 #    Diretory: prefix, holding output from Nano-Q
@@ -27,6 +29,7 @@
 #    bash runNanoQ.sh -fastq reads.fastq -ref refs.fasta
 # Requires
 #    Nano-Q, see help message for possible install locations
+#    racon, Only if using -racon option
 #    samtools
 #    minimap2
 #    awk
@@ -51,6 +54,7 @@ prefixStr="Nano-q-out"; # prefix for file names
 numThreadsInt=3;     # number threads to use (and subprocesses Nano-Q luanches)
 cutOffOffsetInt=50;  # how much to offset cut off value for Nano-Q
 pathToNanoQStr="";   # path to nanoq.py
+useRaconBool=0;     # use racon to build consensuses
 
 # Variables for Nano-Q
 
@@ -65,7 +69,6 @@ singleArgsStr="";      # holds the single argument options for Nano-Q
 # Sec-1 Sub-2: Variables specific to script
 #*******************************************************************************
 
-nanoTasksStr="Running";  # holds subprocess Nano-Q launched
 numRefsInt=0; # number of references in fasta file
 jumpIntervalInt=0;     # jump interval are the number of reads Nano-Q caclulates
                        # the hamming distance at a time. Each jump interval
@@ -85,6 +88,9 @@ helpStr="$(basename "$0") -fastq reads.fastq -ref refs.fasta
     -fastq: Fastq file of reads to find variants in         [Required]
     -ref: Fasta file with references to align reads against [Required]
     -p: Prefix for file names                               [Nano-q-out]
+    -racon: Use racon to build a cosensus for each cluster  [0 = no]
+            of reads.
+        - Sets -kc (keep clusters) to ON.
     -min-q: Minimum mapping quality to keep read            [20]
     -min-len: Minimum aligned length to keep read           [600]
     -path-to-nanoq: Path to nanoq.py. If not provided checks
@@ -137,13 +143,16 @@ helpStr="$(basename "$0") -fastq reads.fastq -ref refs.fasta
 
 while [ $# -gt 0 ]; do
 # while their is user input to check
-    if [[ "$2" == "" ]]; then
+    # Check if their is an agrument (parameters start with -)
+    if [[ "$(printf "%s" "$2" | sed 's/^-.*/-/')" == "-"  || "$2" == "" ]]; then
     # if parameter has no argument
         if [[ "$singleArgsStr" != "" ]]; then
             singleArgsStr="$singleArgsStr ";
         fi # if need to add space between single arguments
 
         case $1 in             # checking single argument input for Nano-Q
+            -racon) useRaconBool=1;  # Use racon to build a consensuses (con)
+                    singleArgsStr="$singleArgsStr-kc";; # need reads for con
             -d) singleArgsStr="$singleArgsStr-d";;
             -hd) singleArgsStr="$singleArgsStr-hd";;
             -kc) singleArgsStr="$singleArgsStr-kc";;
@@ -232,12 +241,45 @@ if [[ ! -f "$pathToNanoQStr" ]]; then
     fi # if no nano-q.py path provided check some default locatoins
 fi # check if can find path to Nano-Q
 
+# Remove duplicate -kc commands. Otherwise Nano-Q sets off
+singleArgsStr="$( \
+    printf \
+      "%s" \
+      "$singleArgsStr" | 
+    awk '
+      { # MAIN
+         printf "%s", $1; # print out the first argument (want to keep)
+
+         if($1 == "-kc")
+             intKc = 1;  # is a -kc, make so can remove all other -kc
+         else
+             intKc = 0; # Mark that I still need to find the first -kc
+
+          for(intCol = 2; intCol <= NF; intCol++)
+          { # loop through all feilds
+              if($intCol != "-kc")
+              { # If was a parameter I want to keep
+                  printf " %s", $intCol; # not -kc, so ok to print out
+                  continue;
+              } # If was a paramter I want to  keep
+
+              if(intKc < 1)
+              { # if the first -kc
+                      printf " %s", $intCol; # print the -kc, since first time
+                      intKc = 1;            # mark so no other -kc are printed
+              } # if the first -kc
+          } # loop through all feilds
+      }; # MAIN block
+    ' \
+)"; # Get the number of times -kc was supplied
+
 #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 # Sec-3: Run Nano-Q
 #    sec-3 sub-1: Make indexed bamfile for Nano-Q
 #    sec-3 sub-2: Find the cut off length of Nano-Q if user did not supply one
 #    sec-3 sub-3: Find jump interval (number threads) & number of refs supplied
 #    sec-3 sub-4: Run Nano-Q
+#    sec-3 sub-5: Run Racon (if user wanted)
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 #*******************************************************************************
@@ -277,28 +319,28 @@ if [[ ! -f "$prefixStr.bam" ]]; then
             { # if this is the best matching reference for the read
                 if(intRef == 0)
                 { # If this is the frist kept alignment
-                    intRef = 1;   # Number of references with mapped reads
+                    intRef = 1;                 # Number of references with mapped reads
                     refAryStr[intRef] = $3;     # Name of reference one
-                    refCntAryInt[intRef] = 1;  # Number of reads mapped to ref 1
+                    refCntAryInt[intRef] = 1;   # Number of reads mapped to reference 1
                     next;                       # move onto the next alignment
                 }; # If this is the first kept alignment 
         
                 for(intCnt = 1; intCnt <= intRef; intCnt++)
-                { # for all mapped refs, check if matches current reference
+                { # for all mapped references, check if matches current reference
                     if(refAryStr[intCnt] == $3)
                     { # If was a match, incurment count
-                        refCntAryInt[intCnt]++; # Incurment matching ref count
-                        break;                  # found match, stop
+                        refCntAryInt[intCnt]++;     # Incurment count for mathching ref
+                        break;                      # found match, no need to look further
                     }; # If was a match, incument count
         
                     if(intCnt == intRef)
                     { # If there was not matching reference (is new)
                         intRef++;                   # adding in new reference
                         refAryStr[intRef] = $3;     # get new reference name
-                        refCntAryInt[intRef] = 1; # set counter for new ref to 1
+                        refCntAryInt[intRef] = 1;   # set counter for new ref to 1
                         break;
                     }; # If there was no matching reference (is new)
-                }; # for all mapped refs, check if matches current reference
+                }; # for all mapped references, check if matches current reference
             } # if this is the best matching reference for the read
         }; # MAIN block
 
@@ -309,8 +351,7 @@ if [[ ! -f "$prefixStr.bam" ]]; then
                     mostMappedReadsInt = refCntAryInt[intCnt];
             }; # for all references with reads, check which has most reads
         
-            printf "%i", mostMappedReadsInt / numThreadsInt > outFileStr;
-            # print out the max read count/ref
+            printf "%i", mostMappedReadsInt / numThreadsInt > outFileStr; # print out the max read count/ref
         }; # END block
         ' |
       samtools sort \
@@ -356,10 +397,12 @@ if [[ "$readLenCutOffInt" -lt 1 ]]; then
                   if(seqStr == "")
                       next;
                   tmpLenInt = length(seqStr);  # find previous sequences length
-                                                                                                                                                                          if(tmpLenInt < shortestLenInt)
+
+                  if(tmpLenInt < shortestLenInt)
                       shortestLenInt = tmpLenInt;   # find shortest length
-                      seqStr = "";                  # reset for next sequence
-                      next;                         # move to the sequence
+
+                  seqStr = "";                      # reset for next sequence
+                  next;                             # move to the sequence
               } # if on a header line
 
               seqStr = seqStr $0;
@@ -446,10 +489,81 @@ mv \
     "Results" \
     "$prefixStr";
 
-# removing bam files, since no longer need??
+#*******************************************************************************
+# Sec-3 Sub-5: Run Racon (if user wanted)
+#   - In my testing I found that Nano-Q seems to like to put out consensuses
+#     with only N's. My best guess is that their is enough varaition in my
+#     bases to not meet the minimum criteria for keeping a base. This may be
+#     do to read quality of badread simulated reads.
+#   - Nano-Q only builds a dumb consensus. So, I should get similar or better 
+#     results using racon. This will create a consensuses without solid N's
+#*******************************************************************************
+
+# Remove unneeded files
 rm \
     "$prefixStr.bam" \
     "$prefixStr.bam.bai" \
     "$prefixStr--count.txt";
+
+if [[ "$useRaconBool" -lt 1 ]]; then
+    exit;
+fi # if not running racon, then finshed
+
+cd "$prefixStr"; # move into directory with clusters
+
+# move the consensus Nano-Q built to a separate directory
+mkdir "$prefixStr--Nano-Q-build-consensuses";
+mv \
+    *ConsensusFinal.fa \
+    "$prefixStr--Nano-Q-build-consensuses";
+
+# Run racon
+for strClust in ./Clusters/*.fa; do
+# For all clusters Nano-Q found, make a consensus
+
+    # Grab the top 300 reads to build a consensues
+    head \
+        -n 2 \
+        < "$strClust" \
+      > "$prefixStr--first-read.fasta"; # the first read is polished
+
+    sed \
+        -n \
+        '3,600p; # print out the 299 reads after the first read' \
+        < "$strClust" \
+      > "$prefixStr--other-reads.fasta"; # Used to polish first read
+
+    minimap2 \
+        -ax map-ont \
+        -t "$numThreadsInt" \
+        "$prefixStr--first-read.fasta" \
+        "$prefixStr--other-reads.fasta" \
+      > "$prefixStr--tmp.sam";
+
+    racon \
+        -m 8 \
+        -x -6 \
+        -g -8 \
+        -w 500 \
+        -t "$numThreadsInt" \
+        "$prefixStr--other-reads.fasta" \
+        "$prefixStr--tmp.sam" \
+        "$prefixStr--first-read.fasta" \
+      > "$( \
+            printf \
+                "%s" \
+                "$strClust" |
+              sed '
+                s/^\.\/Clusters\///; # remove the ./Clusters/ from the file name
+                s/\.fa/_Consensus.fa/; # add _Consensus to the file name
+              ' \
+      )"; # build consensus & output to file (named ref_cluster#_Consensus.fa)
+
+    # Remove the unneeded files
+    rm \
+        "$prefixStr--tmp.sam" \
+        "$prefixStr--first-read.fasta" \
+        "$prefixStr--other-reads.fasta";
+done # For all clusters Nano-Q found, make a consensus
 
 exit;
