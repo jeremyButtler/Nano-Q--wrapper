@@ -23,7 +23,7 @@ Input:
          - Print help message with all possible commands (there are more options)
 Output:
 
-    - Diretory: prefix, holding output from Nano-Q
+    * Diretory: prefix, holding output from Nano-Q
     
 Run: bash runNanoQ.sh -fastq reads.fastq -ref refs.fasta
     
