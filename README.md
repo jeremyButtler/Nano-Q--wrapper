@@ -17,8 +17,10 @@ Input:
   - -racon:
      - Bulid a consensus using racon
      - This is here because I found that Nano-Q sometimes outputs a consensus
-       with just N's. This is likely just be for reads simulated with
-       badread. Real data may be better.
+       with just N's. This is likely due to lower read quality output from
+       the badread read simulator. Still if you encouter a similar problem,
+       try running your result with -racon. Just keep in mind, I do not mask
+       bases with low read depths.
   - -h:
      - Print help message with all possible commands (there are more options)
      
