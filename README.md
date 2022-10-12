@@ -21,6 +21,7 @@ Input:
        badread. Real data may be better.
   -h:
      - Print help message with all possible commands (there are more options)
+     
 Output:
 
   - Diretory: prefix, holding output from Nano-Q
