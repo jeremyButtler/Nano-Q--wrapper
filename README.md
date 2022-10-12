@@ -26,7 +26,9 @@ Output:
 
   - Diretory: prefix, holding output from Nano-Q
     
-Run: bash runNanoQ.sh -fastq reads.fastq -ref refs.fasta
+Run: 
+
+  - bash runNanoQ.sh -fastq reads.fastq -ref refs.fasta
     
 Required programs:
 
