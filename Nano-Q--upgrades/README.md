@@ -17,3 +17,5 @@ These files holds some changes that make Nano-Q a bit faster or more predictable
 3. Copy these files to your Nano-Q directory
 4. delete scribbles.py from you Nano-Q directory (this gets replaced by scribbles.pxy)
 5. Run: python setup.py build_ext --inplace
+
+The License with this code is Nano-Q's license.
