@@ -1,6 +1,6 @@
 # Nano-Q--wrapper
 
-Wrapper that may help with running Nano-Q (https://github.com/PresetonLeung/Nano-Q)
+Wrapper that may help with running Nano-Q (https://github.com/PrestonLeung/Nano-Q)
 
 Input:
 
@@ -38,7 +38,7 @@ Required programs:
     - Some possible locations to install
       - In home directory (~)
       - Put this script in the Nano-Q directory
-    - https://github.com/PresetonLeung/Nano-Q (only need to download)
+    - https://github.com/PrestonLeung/Nano-Q (only need to download)
   - racon
     - Only if using -racon
     - https://github.com/isovic/racon
