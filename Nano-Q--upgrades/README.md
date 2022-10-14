@@ -1,4 +1,4 @@
-# What this:
+# Some improvements to Nano-Q:
 
 These files holds some changes that make Nano-Q a bit faster or more predictable.
 
