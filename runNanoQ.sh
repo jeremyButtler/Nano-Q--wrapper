@@ -55,6 +55,7 @@ numThreadsInt=3;     # number threads to use (and subprocesses Nano-Q luanches)
 cutOffOffsetInt=50;  # how much to offset cut off value for Nano-Q
 pathToNanoQStr="";   # path to nanoq.py
 useRaconBool=0;     # use racon to build consensuses
+jumpIntervalInt=0;          # number reads to process per cluster
 
 # Variables for Nano-Q
 
@@ -70,7 +71,7 @@ singleArgsStr="";      # holds the single argument options for Nano-Q
 #*******************************************************************************
 
 numRefsInt=0; # number of references in fasta file
-jumpIntervalInt=0;     # jump interval are the number of reads Nano-Q caclulates
+jumpIntervalIntervalInt=0;     # jump interval are the number of reads Nano-Q caclulates
                        # the hamming distance at a time. Each jump interval
                        # launches a subrocess. If poorly choosen this will
                        # launch so many process that it will lock up the syste
@@ -118,6 +119,14 @@ helpStr="$(basename "$0") -fastq reads.fastq -ref refs.fasta
            this length, due to not trimming these sequences.
            My best guess is that Nano-Q assumes there
            will be primers at the end.
+    -j: Number of reads to process per thread               [1000]
+        - If not supplied calculated based on number mapped
+	  reads.
+	- Warning: for old Nano-Q this can launch more 
+	  process then number threads specified.
+	- For my scribbles.pxy file, this luanches -t
+          (number threads) subprocess per cluster + main
+          python process
     -q: Quality threshold cut off for each base             [5]
     -ht: Maximum hamming distant to group reads in cluster  [234]
     -mc: Minimum number of reads to keep a cluster          [30]
@@ -177,6 +186,7 @@ while [ $# -gt 0 ]; do
 
        # Nano-Q variables
        -c) codonStartInt="$2";;                    # frist codon position
+       -j) jumpIntervalInt="$2";;                  # num reads to process/thread
        -l) readLenCutOffInt="$2";;                 # max read legnth??
        -q) nanoQBaseQInt="$2";;                    # base Q-score to keep base
        -ht) maxHamDistInt="$2";;                  # max ham dist to keep cluster
@@ -429,9 +439,12 @@ fi # if user did not provide a read cut off value
 
 # Get the size of jump interval for a given thread
 #  (otherwise Nano-Q launches to many subrocess)
-jumpIntervalInt="$(cat "$prefixStr--count.txt")";
 
-if [[ "$jumpIntervalInt" == "" ]]; then
+if [[ "$jumpIntervalInt" -lt 1 ]]; then
+    jumpIntervalIntervalInt="$(cat "$prefixStr--count.txt")";
+fi # if have to find the number of jumps to do
+
+if [[ "$jumpIntervalIntervalInt" == "" ]]; then
     printf \
         "No reads in %s were mapped, please provide a new set of references\n" \
         "$readsFastqStr";
@@ -464,7 +477,7 @@ if [[ "$singleArgsStr" == "" ]]; then
         -l "$readLenCutOffInt" \
         -nr "$numRefsInt" \
         -q "$nanoQBaseQInt" \
-        -j "$jumpIntervalInt" \
+        -j "$jumpIntervalIntervalInt" \
         -ht "$maxHamDistInt" \
         -ct "$minReadsPerClustInt";
 # if runing Nano-Q without any of the single argument parameters
@@ -477,7 +490,7 @@ else
         -l "$readLenCutOffInt" \
         -nr "$numRefsInt" \
         -q "$nanoQBaseQInt" \
-        -j "$jumpIntervalInt" \
+        -j "$jumpIntervalIntervalInt" \
         -ht "$maxHamDistInt" \
         -ct "$minReadsPerClustInt" \
         "$singleArgsStr";
@@ -520,6 +533,10 @@ mv \
 # Run racon
 for strClust in ./Clusters/*.fa; do
 # For all clusters Nano-Q found, make a consensus
+
+    if [[ ! -f "$strClust" ]]; then
+        continue; # is null case, just let loop finish
+    fi # if is the null case
 
     # Grab the top 300 reads to build a consensues
     head \
